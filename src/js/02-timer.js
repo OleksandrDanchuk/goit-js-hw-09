@@ -1,0 +1,73 @@
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import Notiflix from 'notiflix';
+
+const date = document.querySelector('#datetime-picker');
+const button = document.querySelector('[data-start]');
+const span = document.querySelectorAll('.value');
+const day = document.querySelector('[data-days]');
+const hour = document.querySelector('[data-hours]');
+const min = document.querySelector('[data-minutes]');
+const sec = document.querySelector('[data-seconds]');
+
+button.disabled = true;
+
+flatpickr(date, {
+  enableTime: true,
+  time_24hr: true,
+  defaultDate: new Date(),
+  minuteIncrement: 1,
+  onClose(selectedDate) {
+    if (selectedDate[0] <= Date.now()) {
+      Notiflix.Notify.failure('Please choose a date in the future');
+      button.disabled = true;
+    } else {
+      button.disabled = false;
+
+      Notiflix.Notify.success('Lets go?');
+    }
+  },
+});
+
+let timerId = null;
+button.addEventListener('click', onButtonStartClick);
+
+function onButtonStartClick() {
+  span.forEach(item => item.classList.toggle('end'));
+  button.disabled = true;
+  date.disabled = true;
+  timerId = setInterval(() => {
+    const pickedDate = new Date(date.value);
+    const timeTillFinish = pickedDate - Date.now();
+    const { days, hours, minutes, seconds } = convertToMs(timeTillFinish);
+
+    day.textContent = addLeadingZero(days);
+    hour.textContent = addLeadingZero(hours);
+    min.textContent = addLeadingZero(minutes);
+    sec.textContent = addLeadingZero(seconds);
+
+    if (timeTillFinish < 1000) {
+      span.forEach(item => item.classList.toggle('end'));
+      clearInterval(timerId);
+      date.disabled = false;
+    }
+  }, 1000);
+}
+
+function convertToMs(ms) {
+  const second = 1000;
+  const minute = second * 60;
+  const hour = minute * 60;
+  const day = hour * 24;
+
+  const days = Math.floor(ms / day);
+  const hours = Math.floor((ms % day) / hour);
+  const minutes = Math.floor(((ms % day) % hour) / minute);
+  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+
+  return { days, hours, minutes, seconds };
+}
+
+function addLeadingZero(value) {
+  return `${value}`.padStart(2, '0');
+}
